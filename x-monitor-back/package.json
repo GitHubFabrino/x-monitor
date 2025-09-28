@@ -1,0 +1,28 @@
+{
+  "name": "x-monitor-back",
+  "version": "1.0.0",
+  "description": "API REST pour surveiller en temps réel les appareils connectés au Wi-Fi et leur durée de connexion.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "wifi",
+    "monitoring",
+    "express",
+    "arp",
+    "sse"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
