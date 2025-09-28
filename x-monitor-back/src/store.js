@@ -6,6 +6,10 @@ import EventEmitter from 'events';
 //   ip: string,
 //   mac?: string,
 //   hostname?: string,
+//   vendor?: string,
+//   lastRttMs?: number | null,
+//   netbios?: string,
+//   osGuess?: string,
 //   firstSeen: number (ms epoch),
 //   lastSeen: number (ms epoch),
 //   online: boolean,
@@ -16,7 +20,7 @@ export function createStore({ offlineTimeoutMs = 30000 } = {}) {
   const byId = new Map(); // id -> device
   const emitter = new EventEmitter();
 
-  function ensureDevice({ ip, mac, hostname }) {
+  function ensureDevice({ ip, mac, hostname, vendor, rttMs, netbios, osGuess }) {
     const id = mac || ip; // prefer mac if available
     let d = byId.get(id);
     const now = Date.now();
@@ -26,6 +30,10 @@ export function createStore({ offlineTimeoutMs = 30000 } = {}) {
         ip,
         mac,
         hostname,
+        vendor,
+        lastRttMs: rttMs ?? null,
+        netbios,
+        osGuess,
         firstSeen: now,
         lastSeen: now,
         online: true,
@@ -37,6 +45,10 @@ export function createStore({ offlineTimeoutMs = 30000 } = {}) {
       d.ip = ip || d.ip;
       d.mac = mac || d.mac;
       d.hostname = hostname || d.hostname;
+      d.vendor = vendor || d.vendor;
+      if (typeof rttMs === 'number' || rttMs === null) d.lastRttMs = rttMs;
+      d.netbios = netbios || d.netbios;
+      d.osGuess = osGuess || d.osGuess;
       d.lastSeen = now;
       if (!d.online) {
         d.online = true;

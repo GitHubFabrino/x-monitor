@@ -8,6 +8,11 @@ import { createRoutes } from './routes.js';
 const PORT = process.env.PORT || 3000;
 const SCAN_INTERVAL_MS = Number(process.env.SCAN_INTERVAL_MS || 10000); // 10s
 const OFFLINE_TIMEOUT_MS = Number(process.env.OFFLINE_TIMEOUT_MS || 30000); // 30s without seeing -> offline
+const ENABLE_MDNS = String(process.env.ENABLE_MDNS || 'true').toLowerCase() === 'true';
+const ENABLE_NBTSCAN = String(process.env.ENABLE_NBTSCAN || 'false').toLowerCase() === 'true';
+const ENABLE_NMAP_OS = String(process.env.ENABLE_NMAP_OS || 'false').toLowerCase() === 'true';
+const NMAP_PATH = process.env.NMAP_PATH || 'nmap';
+const NBTSCAN_PATH = process.env.NBTSCAN_PATH || 'nbtscan';
 
 async function main() {
   const app = express();
@@ -21,6 +26,11 @@ async function main() {
     scanIntervalMs: SCAN_INTERVAL_MS,
     onSeen: (entry) => store.markSeen(entry),
     onSweep: () => store.reapOffline(),
+    enableMdns: ENABLE_MDNS,
+    enableNbtscan: ENABLE_NBTSCAN,
+    enableNmapOs: ENABLE_NMAP_OS,
+    nmapPath: NMAP_PATH,
+    nbtscanPath: NBTSCAN_PATH,
   });
 
   // Routes
