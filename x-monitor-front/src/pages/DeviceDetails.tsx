@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Cpu, HardDrive, MemoryStick, Server, Activity, Clock, Info, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
