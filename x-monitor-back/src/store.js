@@ -38,6 +38,7 @@ export function createStore({ offlineTimeoutMs = 30000 } = {}) {
         lastSeen: now,
         online: true,
         sessions: [{ start: now }],
+        offre: "1H"
       };
       byId.set(id, d);
       emitter.emit('device:new', d);

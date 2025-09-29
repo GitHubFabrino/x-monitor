@@ -109,6 +109,8 @@ export function createScanner({ networkCidr, interface: netIface, scanIntervalMs
   const nbtCache = new Map();    // ip -> netbios
   const osCache = new Map();     // ip -> osGuess
 
+  console.log("scanner created");
+
   // mDNS resolver (reverse PTR)
   const mdnsInstance = enableMdns ? mdns() : null;
   function toReversePtr(ip) {
@@ -207,6 +209,7 @@ export function createScanner({ networkCidr, interface: netIface, scanIntervalMs
   }
 
   async function scanOnce() {
+    console.log(`[${new Date().toISOString()}] Début du scan réseau...`);
     if (!currentCIDR) currentCIDR = await detectLocalCIDR(netIface);
 
     // 1) Ping sweep to refresh ARP/neigh table and capture RTTs

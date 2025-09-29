@@ -1,96 +1,61 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Monitor, Server, Cpu, HardDrive, MemoryStick } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useDeviceStore } from '../store/useDeviceStore';
+import { useDeviceStream } from '../hooks/useDeviceStream';
 
-interface Device {
-  id: string;
-  name: string;
-  status: 'online' | 'offline';
-  lastSeen: string;
-  ipAddress: string;
-  os: string;
-  cpu: {
-    usage: number;
-    cores: number;
-  };
-  memory: {
-    total: number;
-    used: number;
-  };
-  disk: {
-    total: number;
-    used: number;
-  };
-}
-
-const fetchDevices = async (): Promise<Device[]> => {
-  // TODO: Replace with actual API call
-  // const response = await fetch('/api/devices');
-  // if (!response.ok) {
-  //   throw new Error('Failed to fetch devices');
-  // }
-  // return response.json();
+const formatDuration = (ms: number): string => {
+  if (!ms && ms !== 0) return 'Unknown';
   
-  // Mock data for now
-  return [
-    {
-      id: '1',
-      name: 'Main Server',
-      status: 'online',
-      lastSeen: new Date().toISOString(),
-      ipAddress: '192.168.1.100',
-      os: 'Ubuntu 22.04',
-      cpu: {
-        usage: 45,
-        cores: 8,
-      },
-      memory: {
-        total: 32,
-        used: 12,
-      },
-      disk: {
-        total: 1000,
-        used: 450,
-      },
-    },
-    {
-      id: '2',
-      name: 'Backup Server',
-      status: 'offline',
-      lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-      ipAddress: '192.168.1.101',
-      os: 'CentOS 8',
-      cpu: {
-        usage: 0,
-        cores: 4,
-      },
-      memory: {
-        total: 16,
-        used: 0,
-      },
-      disk: {
-        total: 2000,
-        used: 0,
-      },
-    },
-  ];
+  const seconds = Math.floor((ms / 1000) % 60);
+  const minutes = Math.floor((ms / (1000 * 60)) % 60);
+  const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+  return parts.join(' ');
 };
 
 const Dashboard = () => {
-  const { data: devices, isLoading, error } = useQuery({
-    queryKey: ['devices'],
-    queryFn: fetchDevices,
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
+  const { getAllDevices, devicesAll, isLoading } = useDeviceStore();
+  const [error, setError] = useState<Error | null>(null);
+  
+  // Activer le flux SSE
+  useDeviceStream();
+
+  // Charger les appareils initiaux
+  useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        await getAllDevices();
+      } catch (err) {
+        setError(err as Error);
+      }
+    };
+    
+    loadDevices();
+  }, [getAllDevices]);
 
   if (error) {
     toast.error('Failed to load devices');
     return <div className="alert alert-error">Error loading devices. Please try again later.</div>;
   }
 
-  const onlineDevices = devices?.filter(device => device.status === 'online').length || 0;
-  const totalDevices = devices?.length || 0;
+  // S'assurer que devicesAll est un tableau avant d'utiliser filter
+  const devices = Array.isArray(devicesAll) ? devicesAll : [];
+  const onlineDevices = devices.filter(device => device.online).length;
+  const totalDevices = devices.length;
+  
+  // Log pour déboguer les mises à jour des appareils
+  useEffect(() => {
+    console.log('Appareils dans le Dashboard:', devices);
+  }, [devices]);
 
   return (
     <div className="space-y-6">
@@ -131,16 +96,16 @@ const Dashboard = () => {
                     <th>Name</th>
                     <th>Status</th>
                     <th>IP Address</th>
-                    <th>OS</th>
-                    <th>CPU</th>
-                    <th>Memory</th>
-                    <th>Disk</th>
+                    <th>Duration</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Offre</th>
                     <th>Last Seen</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {devices?.map((device) => (
+                  {devices.map((device) => (
                     <tr key={device.id}>
                       <td>
                         <div className="flex items-center space-x-3">
@@ -150,38 +115,31 @@ const Dashboard = () => {
                             </div>
                           </div>
                           <div>
-                            <div className="font-bold">{device.name}</div>
-                            <div className="text-sm opacity-50">{device.id}</div>
+                            <div className="font-bold">{
+                              device.vendor 
+                                ? device.vendor.split(' ').slice(0, 2).join(' ')
+                                : device.ip
+                            }</div>
+                            <div className="text-sm opacity-50">{device.mac || device.id}</div>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div className="flex items-center">
-                          <div className={`w-3 h-3 rounded-full mr-2 ${device.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                          <span className="capitalize">{device.status}</span>
+                          <div className={`w-3 h-3 rounded-full mr-2 ${device.online ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                          <span className="capitalize">{device.online ? 'online' : 'offline'}</span>
                         </div>
                       </td>
-                      <td>{device.ipAddress}</td>
-                      <td>{device.os}</td>
+                      <td>{device.ip}</td>
+                      <td>{formatDuration(device.durationMs || 0)}</td>
                       <td>
-                        <div className="flex items-center">
-                          <Cpu className="w-4 h-4 mr-1" />
-                          {device.status === 'online' ? `${device.cpu.usage}%` : 'N/A'}
-                        </div>
+                        {device?.sessions?.[0]?.start ? new Date(device.sessions[0].start).toLocaleString() : 'N/A'}
                       </td>
                       <td>
-                        <div className="flex items-center">
-                          <MemoryStick className="w-4 h-4 mr-1" />
-                          {device.status === 'online' ? 
-                            `${Math.round((device.memory.used / device.memory.total) * 100)}%` : 'N/A'}
-                        </div>
+                        {device?.sessions?.[0]?.end ? new Date(device.sessions[0].end).toLocaleString() : 'En cours...'}
                       </td>
                       <td>
-                        <div className="flex items-center">
-                          <HardDrive className="w-4 h-4 mr-1" />
-                          {device.status === 'online' ? 
-                            `${Math.round((device.disk.used / device.disk.total) * 100)}%` : 'N/A'}
-                        </div>
+                        {device?.offre}
                       </td>
                       <td>{new Date(device.lastSeen).toLocaleString()}</td>
                       <td>

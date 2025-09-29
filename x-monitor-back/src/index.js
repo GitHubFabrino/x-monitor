@@ -5,7 +5,7 @@ import { createScanner } from './scanner.js';
 import { createStore } from './store.js';
 import { createRoutes } from './routes.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const SCAN_INTERVAL_MS = Number(process.env.SCAN_INTERVAL_MS || 10000); // 10s
 const OFFLINE_TIMEOUT_MS = Number(process.env.OFFLINE_TIMEOUT_MS || 30000); // 30s without seeing -> offline
 const ENABLE_MDNS = String(process.env.ENABLE_MDNS || 'true').toLowerCase() === 'true';
@@ -16,7 +16,12 @@ const NBTSCAN_PATH = process.env.NBTSCAN_PATH || 'nbtscan';
 
 async function main() {
   const app = express();
-  app.use(cors());
+  app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
   app.use(express.json());
 
   const store = createStore({ offlineTimeoutMs: OFFLINE_TIMEOUT_MS });
