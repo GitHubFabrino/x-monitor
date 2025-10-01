@@ -30,17 +30,100 @@ export function createRoutes({ store, scanner }) {
   // Mettre à jour un appareil
   router.put('/devices/:id', async (req, res) => {
     try {
-      const device = await Device.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
+      const device = await Device.findById(req.params.id);
       if (!device) {
         return res.status(404).json({ error: 'Appareil non trouvé' });
       }
-      res.json(device);
+
+      // Mettre à jour le type si fourni
+      if (req.body.type) {
+        if (!['user', 'admin'].includes(req.body.type)) {
+          return res.status(400).json({ error: 'Type invalide. Doit être "user" ou "admin"' });
+        }
+        device.type = req.body.type;
+      }
+
+      // Si une offre est fournie dans le body et qu'il y a une session active
+      if (req.body.offre && device.sessions && device.sessions.length > 0) {
+        const lastSession = device.sessions[device.sessions.length - 1];
+        if (lastSession.status === 'active') {
+          // Durées des offres en millisecondes
+          const OFFER_DURATIONS = {
+            '1H': 60 * 60 * 1000,        // 1 heure
+            '3H': 3 * 60 * 60 * 1000,    // 3 heures
+            '4H': 4 * 60 * 60 * 1000,    // 4 heures
+            '1D': 24 * 60 * 60 * 1000,   // 1 jour
+            '1S': 7 * 24 * 60 * 60 * 1000, // 1 semaine
+            '2S': 14 * 24 * 60 * 60 * 1000, // 2 semaines
+            '3S': 21 * 24 * 60 * 60 * 1000, // 3 semaines
+            '1M': 30 * 24 * 60 * 60 * 1000, // 1 mois
+          };
+
+          // Si l'offre est valide, mettre à jour la date de fin
+          if (OFFER_DURATIONS[req.body.offre]) {
+            lastSession.end = new Date(lastSession.start).getTime() + OFFER_DURATIONS[req.body.offre];
+          }
+        }
+      }
+
+      // Mettre à jour les autres champs de l'appareil (sauf le type déjà géré)
+      const { type, ...otherUpdates } = req.body;
+      Object.assign(device, otherUpdates);
+      
+      // Sauvegarder les modifications avec validation
+      const updatedDevice = await device.save({ validateBeforeSave: true });
+      
+      res.json(updatedDevice);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      console.error('Erreur lors de la mise à jour de l\'appareil:', error);
+      res.status(400).json({ 
+        error: 'Erreur lors de la mise à jour de l\'appareil',
+        details: error.message 
+      });
+    }
+  });
+
+  // Rafraîchir la session d'un appareil
+  router.put('/refresh/:id', async (req, res) => {
+    try {
+      // Vérifier d'abord si l'appareil existe
+      const device = await Device.findById(req.params.id);
+      if (!device) {
+        return res.status(404).json({ error: 'Appareil non trouvé' });
+      }
+
+      // Mettre à jour l'offre à 1H
+      device.offre = "1H";
+
+      // Supprimer toutes les sessions existantes
+      device.sessions = [];
+
+      // Créer une nouvelle session
+      const now = Date.now();
+      const newSession = {
+        start: now,
+        end: now + 3600000, // 1 heure en millisecondes
+        status: 'active'
+      };
+      
+      // Ajouter la nouvelle session
+      device.sessions.push(newSession);
+
+      // Mettre à jour le lastSeen
+      device.lastSeen = now;
+      device.online = true;
+
+      // Sauvegarder les modifications avec validation
+      const updatedDevice = await device.save({ validateBeforeSave: true });
+      
+      // Retourner l'appareil mis à jour avec la nouvelle session
+      res.json(updatedDevice);
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement de l\'appareil:', error);
+      res.status(500).json({ 
+        error: 'Erreur lors du rafraîchissement de l\'appareil',
+        details: error.message 
+      });
     }
   });
 

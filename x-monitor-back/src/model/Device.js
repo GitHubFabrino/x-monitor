@@ -73,6 +73,12 @@ const deviceSchema = new mongoose.Schema({
     required: true,
     default: "1H",
     enum: ["1H", "3H","NIGHT","DAY","1S","2S","3S","1M"]
+  },
+  type :{
+    type: String,
+    required: true,
+    default: "user",
+    enum: ["user", "admin"]
   }
 }, {
   timestamps: true

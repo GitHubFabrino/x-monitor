@@ -205,33 +205,36 @@ async function markSeen(entry) {
     };
   
     if (ip) updates.ip = ip;
-    if (hostname) updates.hostname = hostname;
+    // if (hostname) updates.hostname = hostname;
     if (vendor) updates.vendor = vendor;
     if (netbios) updates.netbios = netbios;
     if (osGuess) updates.osGuess = osGuess;
     if (lastRttMs) updates.lastRttMs = lastRttMs;
+
+
+    
   
     // Vérifier si une nouvelle session doit être démarrée
-    const activeSession = device.sessions && device.sessions.length > 0 
-      ? device.sessions[device.sessions.length - 1]
-      : null;
+    // const activeSession = device.sessions && device.sessions.length > 0 
+    //   ? device.sessions[device.sessions.length - 1]
+    //   : null;
 
-    if (!activeSession || activeSession.status !== 'active' || 
-        (activeSession.end && new Date(activeSession.end) <= now)) {
-      // Démarrer une nouvelle session
-      const endDate = calculateEndDate(now, device.offre || "1H");
-      updates.$push = {
-        sessions: {
-          start: now,
-          end: endDate,
-          status: 'active'
-        }
-      };
-    } else {
-      // Mettre à jour la durée de la session active
-      updates.$set = updates.$set || {};
-      updates.$set['sessions.$[].durationMs'] = now - new Date(activeSession.start);
-    }
+    // if (!activeSession || activeSession.status !== 'active' || 
+    //     (activeSession.end && new Date(activeSession.end) <= now)) {
+    //   // Démarrer une nouvelle session
+    //   const endDate = calculateEndDate(now, device.offre || "1H");
+    //   updates.$push = {
+    //     sessions: {
+    //       start: now,
+    //       end: endDate,
+    //       status: 'active'
+    //     }
+    //   };
+    // } else {
+    //   // Mettre à jour la durée de la session active
+    //   updates.$set = updates.$set || {};
+    //   updates.$set['sessions.$[].durationMs'] = now - new Date(activeSession.start);
+    // }
   
     device = await Device.findOneAndUpdate(
       { mac },

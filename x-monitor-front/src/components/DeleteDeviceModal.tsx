@@ -6,6 +6,7 @@ interface DeleteDeviceModalProps {
   device: Device | null;
   onConfirm: () => void;
   isDeleting?: boolean;
+  type?: "delete" | "refresh";
 }
 
 export const DeleteDeviceModal = ({
@@ -14,15 +15,16 @@ export const DeleteDeviceModal = ({
   device,
   onConfirm,
   isDeleting = false,
+  type = "delete"
 }: DeleteDeviceModalProps) => {
   if (!device) return null;
 
   return (
     <div className={`modal ${isOpen ? 'modal-open' : ''}`}>
       <div className="modal-box">
-        <h3 className="font-bold text-lg">Confirmer la suppression</h3>
+        <h3 className="font-bold text-lg">Confirmer la {type === "delete" ? "suppression" : "rafraîchissement"}</h3>
         <p className="py-4">
-          Êtes-vous sûr de vouloir supprimer l'appareil <strong>{device.hostname || device.ip}</strong> ?
+          Êtes-vous sûr de vouloir {type === "delete" ? "supprimer" : "rafraîchir"} l'appareil <strong>{device.hostname || device.ip}</strong> ?
           Cette action est irréversible.
         </p>
         <div className="modal-action">
@@ -40,7 +42,7 @@ export const DeleteDeviceModal = ({
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
+            {isDeleting ? (type === "delete" ? "Suppression..." : "Rafraîchissement...") : (type === "delete" ? "Supprimer" : "Rafraîchir")}
           </button>
         </div>
       </div>

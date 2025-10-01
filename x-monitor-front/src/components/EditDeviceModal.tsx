@@ -7,6 +7,7 @@ interface EditDeviceModalProps {
   formData: {
     offre?: string;
     hostname?: string;
+    type?: string;
   };
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -39,6 +40,22 @@ export const EditDeviceModal = ({
               className="input input-bordered w-full"
               required
             />
+          </div>
+          <div className="form-control w-full mb-4">
+            <label className="label">
+              <span className="label-text">Type</span>
+            </label>
+            <select 
+              name="type" 
+              value={formData.type || ''}
+              onChange={onInputChange}
+              className="select select-bordered w-full"
+              required
+            >
+              <option value="">Sélectionner un type</option>
+              <option value="user">Client</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
           
           <div className="form-control w-full mb-4">

@@ -80,6 +80,7 @@ async function main() {
         '/api/devices/:id',
         '/api/stream',
         '/api/health',
+        '/api/refresh/:id',
       ],
     });
   });

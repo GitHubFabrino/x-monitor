@@ -21,6 +21,7 @@ export interface Device {
   }>;
   durationMs?: number;
   offre?: string;
+  type?: string;
 }
 
 type SetStateAction<S> = S | ((prevState: S) => S);
@@ -29,9 +30,10 @@ interface DeviceStore {
   devicesAll: Device[];
   isLoading: boolean;
   getAllDevices: () => Promise<void>;
-  updateDevice: (id: string, data: { hostname?: string; offre?: string }) => Promise<Device | null>;
+  updateDevice: (id: string, data: { hostname?: string; offre?: string; type?: string }) => Promise<Device | null>;
   deleteDevice: (id: string) => Promise<boolean>;
   setDevices: (devices: SetStateAction<Device[]>) => void;
+  refreshDevice: (id: string) => Promise<boolean>;
 }
 
 
@@ -67,6 +69,24 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
             // Mettre à jour la liste des appareils après la modification
             await get().getAllDevices();
             toast.success("Appareil mis à jour avec succès");
+            return response.data;
+        } catch (error) {
+            console.error("Error updating device", error);
+            toast.error("Échec de la mise à jour de l'appareil");
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    refreshDevice : async (id: string) => {
+        try {
+            set({ isLoading: true });
+            const response = await axiosInstance.put(`/refresh/${id}`);
+            console.log("refresh", response.data);
+            // Mettre à jour la liste des appareils après la modification
+            await get().getAllDevices();
+            toast.success("Appareil rafraîchi avec succès");
             return response.data;
         } catch (error) {
             console.error("Error updating device", error);
