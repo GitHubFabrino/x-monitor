@@ -96,7 +96,7 @@ export function createRoutes({ store, scanner }) {
       device.offre = "1H";
 
       // Supprimer toutes les sessions existantes
-      device.sessions = [];
+      // device.sessions = [];
 
       // Créer une nouvelle session
       const now = Date.now();

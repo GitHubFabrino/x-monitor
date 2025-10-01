@@ -42,11 +42,14 @@ export const formatDuration = (ms: number): string => {
  */
 const calculateDuration = (device: Device): DurationResult => {
   try {
-    if (!device?.sessions?.length || !device.sessions[0]?.start) {
+    const sessions = device?.sessions;
+    const lastSession = sessions?.[sessions.length - 1];
+    
+    if (!sessions?.length || !lastSession?.start) {
       return { formatted: 'N/A', isExpired: false, isAboutToExpire: false };
     }
 
-    const sessionStart = new Date(device.sessions[0].start);
+    const sessionStart = new Date(lastSession.start);
     const now = new Date();
     
     if (isNaN(sessionStart.getTime())) {

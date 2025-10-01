@@ -16,8 +16,11 @@ export interface Device {
   lastSeen: number;  // ms epoch
   online: boolean;
   sessions: Array<{
-    start: number;
-    end?: number;
+    _id: string;
+    start: string | number;
+    end?: string | number;
+    status?: string;
+    durationMs?: number;
   }>;
   durationMs?: number;
   offre?: string;

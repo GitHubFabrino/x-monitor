@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Server, Edit, Trash2, RefreshCcw , HatGlasses , User} from 'lucide-react';
+import { Monitor, Edit, Trash2, RefreshCcw , HatGlasses , User} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useDeviceStore, type Device } from '../store/useDeviceStore';
 import { EditDeviceModal } from '../components/EditDeviceModal';
@@ -423,7 +423,7 @@ const Dashboard = () => {
                       </td>
                       <td>
                         <div className="flex space-x-2">
-                          <Link to={`/devices/${device.id || device.ip}`} className="btn btn-ghost btn-xs">Details</Link>
+                          <Link to={`/devices/${device._id || device.ip}`} className="btn btn-ghost btn-xs">Details</Link>
                           <button
                             className="btn btn-ghost btn-xs"
                             onClick={(e) => {
