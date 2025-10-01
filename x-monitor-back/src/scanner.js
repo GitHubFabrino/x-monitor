@@ -3,6 +3,8 @@ import { promisify } from 'util';
 import dns from 'node:dns/promises';
 import oui from 'oui';
 import mdns from 'multicast-dns';
+// En haut du fichier scanner.js, après les autres imports
+import Device from './model/Device.js';
 
 const exec = promisify(_exec);
 
@@ -99,10 +101,10 @@ async function readNeighbors() {
   }
 }
 
-export function createScanner({ networkCidr, interface: netIface, scanIntervalMs = 10000, onSeen = () => {}, onSweep = () => {}, enableMdns = true, enableNbtscan = false, enableNmapOs = false, nmapPath = 'nmap', nbtscanPath = 'nbtscan' } = {}) {
+export function createScanner({ networkCidr, interface: netIface, scanIntervalMs = 10000, onSeen = () => {}, onSweep = () => {}, enableMdns = true, enableNbtscan = false, enableNmapOs = false, nmapPath = 'nmap', nbtscanPath = 'nbtscan' , io = null } = {}) {
   let running = false;
   let timer = null;
-  let currentCIDR = networkCidr;
+  let currentCIDR = networkCidr || null;
   const vendorCache = new Map(); // mac -> vendor
   const hostCache = new Map();   // ip -> hostname
   const mdnsCache = new Map();   // ip -> hostname (mDNS)
@@ -247,6 +249,7 @@ export function createScanner({ networkCidr, interface: netIface, scanIntervalMs
 
     onSweep();
   }
+
 
   async function start() {
     if (running) return;

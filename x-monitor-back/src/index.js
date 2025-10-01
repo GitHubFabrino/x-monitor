@@ -1,10 +1,12 @@
 import 'dotenv/config';
 import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import { createScanner } from './scanner.js';
 import { createStore } from './store.js';
 import { createRoutes } from './routes.js';
-
+import { connectToDB } from './lib/db.js';
 const PORT = process.env.PORT || 3001;
 const SCAN_INTERVAL_MS = Number(process.env.SCAN_INTERVAL_MS || 10000); // 10s
 const OFFLINE_TIMEOUT_MS = Number(process.env.OFFLINE_TIMEOUT_MS || 30000); // 30s without seeing -> offline
@@ -16,15 +18,41 @@ const NBTSCAN_PATH = process.env.NBTSCAN_PATH || 'nbtscan';
 
 async function main() {
   const app = express();
-  app.use(cors({
+  const httpServer = createServer(app);
+  await connectToDB();
+  // Configuration CORS pour Express
+  const corsOptions = {
     origin: "http://localhost:3000",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  };
+  
+  app.use(cors(corsOptions));
   app.use(express.json());
+  
+  // Configuration de Socket.IO avec CORS
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "http://localhost:3000",
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
+  
+  // Gestion des connexions Socket.IO
+  io.on('connection', (socket) => {
+    console.log('Nouveau client connecté:', socket.id);
+    
+    socket.on('disconnect', () => {
+      console.log('Client déconnecté:', socket.id);
+    });
+  });
 
-  const store = createStore({ offlineTimeoutMs: OFFLINE_TIMEOUT_MS });
+  const store = createStore({ 
+    offlineTimeoutMs: OFFLINE_TIMEOUT_MS,
+    io // Passer l'instance Socket.IO au store
+  });
   const scanner = createScanner({
     networkCidr: process.env.NETWORK_CIDR || undefined,
     interface: process.env.NET_IFACE || undefined,
@@ -36,6 +64,7 @@ async function main() {
     enableNmapOs: ENABLE_NMAP_OS,
     nmapPath: NMAP_PATH,
     nbtscanPath: NBTSCAN_PATH,
+    io,
   });
 
   // Routes
@@ -63,7 +92,8 @@ async function main() {
     });
   });
 
-  app.listen(PORT, () => {
+  // Démarrer le serveur HTTP au lieu du serveur Express
+  httpServer.listen(PORT, () => {
     console.log(`x-monitor API listening on http://localhost:${PORT}`);
   });
 

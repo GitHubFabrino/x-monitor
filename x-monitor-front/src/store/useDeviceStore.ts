@@ -3,7 +3,8 @@ import { toast } from "react-hot-toast";
 import axiosInstance from "../lib/axios";
 
 export interface Device {
-  id: string; // MAC or IP as fallback
+  _id: string; // Toujours défini pour les appareils provenant du backend
+  id?: string; // Pour la rétrocompatibilité
   ip: string;
   mac?: string;
   hostname?: string;
@@ -28,11 +29,12 @@ interface DeviceStore {
   devicesAll: Device[];
   isLoading: boolean;
   getAllDevices: () => Promise<void>;
+  updateDevice: (id: string, data: { hostname?: string; offre?: string }) => Promise<Device | null>;
+  deleteDevice: (id: string) => Promise<boolean>;
   setDevices: (devices: SetStateAction<Device[]>) => void;
-  // Add other store methods and state here
 }
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3001" : "/";
+
 
 export const useDeviceStore = create<DeviceStore>((set, get) => ({
     devicesAll: [],
@@ -53,9 +55,42 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
             console.error("Error getting devices", error);
             toast.error("Failed to fetch devices");
             toast.error(error as string);
-        }finally {
-            set({ isLoading : false });
+        } finally {
+            set({ isLoading: false });
         }
     },
     
+    updateDevice: async (id: string, data: { hostname?: string; offre?: string }) => {
+        try {
+            set({ isLoading: true });
+            const response = await axiosInstance.put(`/devices/${id}`, data);
+            // Mettre à jour la liste des appareils après la modification
+            await get().getAllDevices();
+            toast.success("Appareil mis à jour avec succès");
+            return response.data;
+        } catch (error) {
+            console.error("Error updating device", error);
+            toast.error("Échec de la mise à jour de l'appareil");
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    deleteDevice: async (id: string) => {
+        try {
+            set({ isLoading: true });
+            await axiosInstance.delete(`/devices/${id}`);
+            // Mettre à jour la liste des appareils après la suppression
+            await get().getAllDevices();
+            toast.success("Appareil supprimé avec succès");
+            return true;
+        } catch (error) {
+            console.error("Error deleting device", error);
+            toast.error("Échec de la suppression de l'appareil");
+            return false;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
 }))

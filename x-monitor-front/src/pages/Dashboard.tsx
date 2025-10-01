@@ -1,34 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Server, Cpu, HardDrive, MemoryStick } from 'lucide-react';
+import { Monitor, Server, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useDeviceStore } from '../store/useDeviceStore';
-import { useDeviceStream } from '../hooks/useDeviceStream';
+import { useDeviceStore, type Device } from '../store/useDeviceStore';
+import { EditDeviceModal } from '../components/EditDeviceModal';
+import { DeleteDeviceModal } from '../components/DeleteDeviceModal';
+import { formatDuration } from '../utils/utils';
 
-const formatDuration = (ms: number): string => {
-  if (!ms && ms !== 0) return 'Unknown';
-  
-  const seconds = Math.floor((ms / 1000) % 60);
-  const minutes = Math.floor((ms / (1000 * 60)) % 60);
-  const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
-  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-
-  return parts.join(' ');
-};
+interface DeviceFormData {
+  offre?: string;
+  hostname?: string;
+}
 
 const Dashboard = () => {
-  const { getAllDevices, devicesAll, isLoading } = useDeviceStore();
+  const { 
+    getAllDevices, 
+    devicesAll, 
+    isLoading, 
+    updateDevice, 
+    deleteDevice 
+  } = useDeviceStore();
   const [error, setError] = useState<Error | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [editForm, setEditForm] = useState<DeviceFormData>({ offre: '', hostname: '' });
   
-  // Activer le flux SSE
-  useDeviceStream();
-
   // Charger les appareils initiaux
   useEffect(() => {
     const loadDevices = async () => {
@@ -57,8 +54,93 @@ const Dashboard = () => {
     console.log('Appareils dans le Dashboard:', devices);
   }, [devices]);
 
+  const handleEditClick = (device: Device) => {
+    if (!device._id) {
+      console.error('Impossible de modifier l\'appareil: ID manquant');
+      return;
+    }
+    setSelectedDevice(device);
+    setEditForm({
+      offre: device.offre,
+      hostname: device.hostname || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (device: Device) => {
+    if (!device._id) {
+      console.error('Impossible de supprimer l\'appareil: ID manquant');
+      return;
+    }
+    setSelectedDevice(device);
+    setShowDeleteModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDevice || !selectedDevice._id) {
+      console.error('Aucun appareil sélectionné ou ID manquant');
+      return;
+    }
+    
+    try {
+      await updateDevice(selectedDevice._id, {
+        hostname: editForm.hostname,
+        offre: editForm.offre
+      });
+      setShowEditModal(false);
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour de l\'appareil:', err);
+      // L'erreur est déjà gérée dans le store
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedDevice || !selectedDevice._id) {
+      console.error('Aucun appareil sélectionné ou ID manquant');
+      return;
+    }
+    
+    try {
+      await deleteDevice(selectedDevice._id);
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error('Erreur lors de la suppression de l\'appareil:', err);
+      // L'erreur est déjà gérée dans le store
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
     <div className="space-y-6">
+      {/* Edit Device Modal */}
+      <EditDeviceModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        device={selectedDevice}
+        formData={editForm}
+        onInputChange={handleInputChange}
+        onSubmit={handleEditSubmit}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteDeviceModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        device={selectedDevice}
+        onConfirm={handleDeleteConfirm}
+      />
+
+
+
+      
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="stats shadow">
@@ -108,20 +190,9 @@ const Dashboard = () => {
                   {devices.map((device) => (
                     <tr key={device.id}>
                       <td>
-                        <div className="flex items-center space-x-3">
-                          <div className="avatar">
-                            <div className="mask mask-squircle w-12 h-12">
-                              <Server className="w-8 h-8 mx-auto mt-2" />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-bold">{
-                              device.vendor 
-                                ? device.vendor.split(' ').slice(0, 2).join(' ')
-                                : device.ip
-                            }</div>
-                            <div className="text-sm opacity-50">{device.mac || device.id}</div>
-                          </div>
+                        <div>
+                          <h2>{device.hostname}</h2>
+                          <p>{device.mac}</p>
                         </div>
                       </td>
                       <td>
@@ -138,12 +209,32 @@ const Dashboard = () => {
                       <td>
                         {device?.sessions?.[0]?.end ? new Date(device.sessions[0].end).toLocaleString() : 'En cours...'}
                       </td>
-                      <td>
-                        {device?.offre}
-                      </td>
+                      <td>{device?.offre}</td>
                       <td>{new Date(device.lastSeen).toLocaleString()}</td>
                       <td>
-                        <Link to={`/devices/${device.id}`} className="btn btn-ghost btn-xs">Details</Link>
+                        <div className="flex space-x-2">
+                          <Link to={`/devices/${device.id || device.ip}`} className="btn btn-ghost btn-xs">Details</Link>
+                        <button 
+                          className="btn btn-ghost btn-xs"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleEditClick(device);
+                          }}
+                          title="Edit device"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          className="btn btn-ghost btn-xs text-error"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDeleteClick(device);
+                          }}
+                          title="Delete device"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

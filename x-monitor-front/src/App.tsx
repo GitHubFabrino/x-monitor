@@ -6,7 +6,14 @@ import Dashboard from './pages/Dashboard';
 import DeviceDetails from './pages/DeviceDetails';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
+import { useSocketIo } from './hooks/useSocketIo';
 import './index.css';
+
+// Composant pour initialiser les WebSockets
+const SocketInitializer = () => {
+  useSocketIo();
+  return null;
+};
 
 const queryClient = new QueryClient();
 
@@ -16,6 +23,7 @@ function App() {
       <ThemeProvider>
         <Router>
           <div className="min-h-screen bg-base-200">
+            <SocketInitializer />
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />

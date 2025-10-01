@@ -1,30 +1,73 @@
 import express from 'express';
+import Device from './model/Device.js';
 
 export function createRoutes({ store, scanner }) {
   const router = express.Router();
 
-  router.get('/devices', (req, res) => {
-    const devices = store.all();
-    res.json({ count: devices.length, devices });
+  // Récupérer tous les appareils
+  router.get('/devices', async (req, res) => {
+    try {
+      const devices = await Device.find({});
+      res.json({ count: devices.length, devices });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
-  router.get('/devices/:id', (req, res) => {
-    const d = store.get(req.params.id);
-    if (!d) return res.status(404).json({ error: 'Device non trouvé' });
-    res.json(d);
+  // Récupérer un appareil par son ID
+  router.get('/devices/:id', async (req, res) => {
+    try {
+      const device = await Device.findById(req.params.id);
+      if (!device) {
+        return res.status(404).json({ error: 'Appareil non trouvé' });
+      }
+      res.json(device);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mettre à jour un appareil
+  router.put('/devices/:id', async (req, res) => {
+    try {
+      const device = await Device.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      );
+      if (!device) {
+        return res.status(404).json({ error: 'Appareil non trouvé' });
+      }
+      res.json(device);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Supprimer un appareil
+  router.delete('/devices/:id', async (req, res) => {
+    try {
+      const device = await Device.findByIdAndDelete(req.params.id);
+      if (!device) {
+        return res.status(404).json({ error: 'Appareil non trouvé' });
+      }
+      res.json({ message: 'Appareil supprimé avec succès' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Déclencher un scan manuel
   router.post('/scan', async (req, res) => {
     try {
       await scanner.scanOnce();
-      res.json({ status: 'ok' });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
+      res.json({ status: 'Scan démarré' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   });
 
-  // Flux SSE pour mises à jour en temps réel
+  // Flux SSE pour les mises à jour en temps réel
   router.get('/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -36,22 +79,21 @@ export function createRoutes({ store, scanner }) {
     };
 
     // Envoyer l'état initial
-    send('snapshot', { devices: store.all() });
+    Device.find({}).then(devices => {
+      send('snapshot', { devices });
+    });
 
     const onNew = (d) => send('device:new', d);
     const onSeen = (d) => send('device:seen', d);
-    const onOnline = (d) => send('device:online', d);
     const onOffline = (d) => send('device:offline', d);
 
     store.events.on('device:new', onNew);
     store.events.on('device:seen', onSeen);
-    store.events.on('device:online', onOnline);
     store.events.on('device:offline', onOffline);
 
     req.on('close', () => {
       store.events.off('device:new', onNew);
       store.events.off('device:seen', onSeen);
-      store.events.off('device:online', onOnline);
       store.events.off('device:offline', onOffline);
       res.end();
     });
