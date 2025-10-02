@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Edit, Trash2, RefreshCcw , HatGlasses , User, Wallet} from 'lucide-react';
+import { Monitor, Edit, Trash2, RefreshCcw, HatGlasses, User, Wallet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useDeviceStore, type Device } from '../store/useDeviceStore';
 import { EditDeviceModal } from '../components/EditDeviceModal';
@@ -12,6 +12,7 @@ import useSoldeStore from '../store/useSoldeStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRef } from 'react';
+import { Check, X } from 'lucide-react';
 interface DeviceFormData {
   offre?: string;
   hostname?: string;
@@ -31,14 +32,14 @@ const Dashboard = () => {
   } = useDeviceStore();
 
   const {
-          currentSolde,
-          currentSoldeId,
-          soldes,
-          fetchCurrentSolde,
-          fetchAllSoldes,
-          updateSolde,
-          createSolde
-      } = useSoldeStore();
+    currentSolde,
+    currentSoldeId,
+    soldes,
+    fetchCurrentSolde,
+    fetchAllSoldes,
+    updateSolde,
+    createSolde
+  } = useSoldeStore();
 
 
   const [error, setError] = useState<Error | null>(null);
@@ -49,7 +50,7 @@ const Dashboard = () => {
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [editForm, setEditForm] = useState<DeviceFormData>({ offre: '', hostname: '' });
-  
+
   // Filtres
   const [filters, setFilters] = useState({
     type: 'all',
@@ -114,13 +115,13 @@ const Dashboard = () => {
     const { formatted, isExpired, isAboutToExpire } = useDeviceDuration(device);
     const [lastToastTime, setLastToastTime] = useState<number>(0);
     const TOAST_INTERVAL = 1 * 60 * 1000; // 5 minutes en millisecondes
-  
+
     const getDurationClass = () => {
       if (isExpired) return 'text-red-600 font-bold';
       if (isAboutToExpire) return 'text-yellow-600 font-medium';
       return 'text-green-600';
     };
-  
+
     useEffect(() => {
       if (isExpired) {
         const now = Date.now();
@@ -131,7 +132,7 @@ const Dashboard = () => {
           });
           setLastToastTime(now);
         }
-  
+
         // Configurer le prochain rappel
         const timer = setTimeout(() => {
           if (isExpired) { // Vérifier à nouveau au cas où l'état aurait changé
@@ -141,11 +142,11 @@ const Dashboard = () => {
             setLastToastTime(Date.now());
           }
         }, TOAST_INTERVAL);
-  
+
         return () => clearTimeout(timer); // Nettoyer le timer si le composant est démonté
       }
     }, [isExpired, device?.mac, device?.hostname, lastToastTime]);
-  
+
     return <span className={getDurationClass()}>{isExpired ? 'Expired' : formatted}</span>;
   };
   // Appliquer les filtres
@@ -284,19 +285,39 @@ const Dashboard = () => {
         default: return 0;
       }
     };
-  
+
     const solde = calculSolde(selectedDevice.offre || '1H');
 
     try {
       if (!currentSoldeId) return;
-        await updateSolde(currentSoldeId, {
-            montant: Number(solde),
-            operation: 'ajout',
-            description: `${selectedDevice.hostname}`,
-            reference: selectedDevice.mac
-        });
-        toast.success('Paiement effectué avec succès');
+      await updateSolde(currentSoldeId, {
+        montant: Number(solde),
+        operation: 'ajout',
+        description: `${selectedDevice.hostname}`,
+        reference: selectedDevice.mac
+      });
+
+      toast.success('Paiement effectué avec succès');
       setShowPayerModal(false);
+      await updateDevice(selectedDevice._id, {
+        offre: selectedDevice.offre,
+        type: selectedDevice.type,
+        isPaid: true
+      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     } catch (err) {
       console.error('Erreur lors du paiement de l\'appareil:', err);
       toast.error('Erreur lors du paiement de l\'appareil');
@@ -311,6 +332,11 @@ const Dashboard = () => {
       [name]: value
     }));
   };
+  const getlastSession = (device: Device) => {
+    const sessions = device?.sessions;
+    const lastSession = sessions?.[sessions.length - 1];
+    return lastSession;
+  }
 
 
 
@@ -348,7 +374,7 @@ const Dashboard = () => {
         onClose={() => setShowPayerModal(false)}
         device={selectedDevice}
         onConfirm={handlePayerConfirm}
-     
+
       />
 
 
@@ -359,12 +385,12 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="stats shadow bg-base-100">
             <div className="stat">
-              
+
               <div className="stat-title">Solde actuel</div>
               <div className="stat-value text-primary">
-              {currentSolde?.soldeActuel?.toFixed(2) || 0} AR
-                
-               </div>
+                {currentSolde?.soldeActuel?.toFixed(2) || 0} AR
+
+              </div>
               <div className="stat-desc">Mois : {format(new Date(currentSolde?.mois + '-01'), 'MMMM yyyy', { locale: fr })} </div>
             </div>
 
@@ -379,19 +405,19 @@ const Dashboard = () => {
             </div>
           </div>
 
-          
+
         </div>
 
         {/* Filtres */}
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-           
+
             <div className="flex flex-wrap gap-4">
               <div className="form-control flex-1 min-w-[200px]">
                 <label className="label">
                   <span className="label-text">Type</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered w-full"
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
@@ -408,7 +434,7 @@ const Dashboard = () => {
                 <label className="label">
                   <span className="label-text">Statut</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered w-full"
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -425,7 +451,7 @@ const Dashboard = () => {
                 <label className="label">
                   <span className="label-text">Offre</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered w-full"
                   value={filters.offre}
                   onChange={(e) => handleFilterChange('offre', e.target.value)}
@@ -439,7 +465,7 @@ const Dashboard = () => {
               </div>
 
               <div className="form-control justify-end">
-                <button 
+                <button
                   className="btn btn-outline"
                   onClick={() => setFilters({
                     type: 'all',
@@ -457,7 +483,7 @@ const Dashboard = () => {
 
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-         
+
           {isLoading ? (
             <div className="flex justify-center items-center h-32">
               <span className="loading loading-spinner loading-lg"></span>
@@ -470,6 +496,7 @@ const Dashboard = () => {
                     <th>Name</th>
                     <th>Status</th>
                     <th>IP Address</th>
+                    <th>Payer</th>
                     <th>Duration</th>
                     <th>Start Time</th>
                     <th>End Time</th>
@@ -480,8 +507,8 @@ const Dashboard = () => {
                 </thead>
                 <tbody>
                   {filteredDevices.map((device) => (
-                    <tr 
-                      key={device.id} 
+                    <tr
+                      key={device.id}
                       className={`${device.type === 'admin' ? 'bg-blue-950/30 hover:bg-blue-900/40' : 'hover:bg-gray-800/50'} transition-colors`}
                     >
                       <td>
@@ -509,6 +536,20 @@ const Dashboard = () => {
                         </div>
                       </td>
                       <td>{device.ip}</td>
+
+
+
+                      <td >
+                        {getlastSession(device)?.isPaid ? (
+                          <div className="badge badge-success">
+                            Oui
+                          </div>
+                        ) : (
+                          <div className="badge badge-error">
+                            Non
+                          </div>
+                        )}
+                      </td>
                       <td>
                         {device.type === 'admin' ? (
                           <span className="badge badge-warning">Admin</span>
@@ -518,13 +559,13 @@ const Dashboard = () => {
                       </td>
                       <td>
                         <FormattedDate
-                          date={device?.sessions?.[0]?.start}
+                          date={getlastSession(device)?.start}
                           defaultText="N/A"
                         />
                       </td>
                       <td>
                         <FormattedDate
-                          date={device?.sessions?.[0]?.end}
+                          date={getlastSession(device)?.end}
                           defaultText="En cours..."
                         />
                       </td>

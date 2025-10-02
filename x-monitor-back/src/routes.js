@@ -76,6 +76,12 @@ export function createRoutes({ store, scanner }) {
         }
       }
 
+      if (req.body.isPaid && device.sessions && device.sessions.length > 0) {
+        console.log("**********************************************************************isPaid", req.body.isPaid);
+        const lastSession = device.sessions[device.sessions.length - 1];
+        lastSession.isPaid = true;
+      }
+
       // Mettre à jour les autres champs de l'appareil (sauf le type déjà géré)
       const { type, ...otherUpdates } = req.body;
       Object.assign(device, otherUpdates);

@@ -64,7 +64,7 @@ export const PayerDeviceModal = ({
               </div>
               <div className="flex justify-between">
                 <span className="font-medium text-gray-500">Marque :</span>
-                <span className="font-semibold text-blue-600">{device.vendor || 'Inconnu'}</span>
+                <span className="font-semibold text-blue-600">{device.vendor?.split(' ').slice(0, 1).join(' ') || 'Inconnu'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium text-gray-500">Offre :</span>

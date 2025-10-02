@@ -108,7 +108,6 @@ export function createStore({ offlineTimeoutMs = 30000, io } = {}) {
 
       byMac.set(mac, device.toObject());
       emitEvent('device:seen', device);
-      console.log("device seen -----------------------------------------",device.sessions,now,lastSession.start,offre,maxDurationMs,sessionDuration,lastSession.status);
     }
 
     return device;

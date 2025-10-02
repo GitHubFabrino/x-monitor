@@ -13,6 +13,10 @@ const sessionSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'expired'],
     default: 'active'
+  },
+  isPaid: {
+    type: Boolean,
+    default: false
   }
 });
 

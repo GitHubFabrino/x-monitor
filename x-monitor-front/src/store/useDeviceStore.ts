@@ -21,6 +21,7 @@ export interface Device {
     end?: string | number;
     status?: string;
     durationMs?: number;
+    isPaid?: boolean;
   }>;
   durationMs?: number;
   offre?: string;
@@ -33,7 +34,7 @@ interface DeviceStore {
   devicesAll: Device[];
   isLoading: boolean;
   getAllDevices: () => Promise<void>;
-  updateDevice: (id: string, data: { hostname?: string; offre?: string; type?: string }) => Promise<Device | null>;
+  updateDevice: (id: string, data: { hostname?: string; offre?: string; type?: string , isPaid?: boolean}) => Promise<Device | null>;
   deleteDevice: (id: string) => Promise<boolean>;
   setDevices: (devices: SetStateAction<Device[]>) => void;
   refreshDevice: (id: string) => Promise<boolean>;
@@ -65,9 +66,10 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         }
     },
     
-    updateDevice: async (id: string, data: { hostname?: string; offre?: string }) => {
+    updateDevice: async (id: string, data: { hostname?: string; offre?: string; type?: string , isPaid?: boolean }) => {
         try {
             set({ isLoading: true });
+            console.log("updateDevice isPaid", id, data.isPaid);
             const response = await axiosInstance.put(`/devices/${id}`, data);
             // Mettre à jour la liste des appareils après la modification
             await get().getAllDevices();
