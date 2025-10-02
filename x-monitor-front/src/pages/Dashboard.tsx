@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Edit, Trash2, RefreshCcw , HatGlasses , User} from 'lucide-react';
+import { Monitor, Edit, Trash2, RefreshCcw , HatGlasses , User, Wallet} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useDeviceStore, type Device } from '../store/useDeviceStore';
 import { EditDeviceModal } from '../components/EditDeviceModal';
 import { DeleteDeviceModal } from '../components/DeleteDeviceModal';
+import { PayerDeviceModal } from '../components/PayerDeviceModal';
 import { useDeviceDuration, vendorName } from '../utils/utils';
 import { FormattedDate } from '../components/FormattedDate';
+import useSoldeStore from '../store/useSoldeStore';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useRef } from 'react';
 interface DeviceFormData {
   offre?: string;
   hostname?: string;
   type?: string;
 }
+
+
 
 const Dashboard = () => {
   const {
@@ -23,10 +29,24 @@ const Dashboard = () => {
     refreshDevice,
     deleteDevice
   } = useDeviceStore();
+
+  const {
+          currentSolde,
+          currentSoldeId,
+          soldes,
+          fetchCurrentSolde,
+          fetchAllSoldes,
+          updateSolde,
+          createSolde
+      } = useSoldeStore();
+
+
   const [error, setError] = useState<Error | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const [showPayerModal, setShowPayerModal] = useState(false);
+
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [editForm, setEditForm] = useState<DeviceFormData>({ offre: '', hostname: '' });
   
@@ -186,6 +206,15 @@ const Dashboard = () => {
     setShowRefreshModal(true);
   };
 
+  const handlePayerClick = (device: Device) => {
+    if (!device._id) {
+      console.error('Impossible de payer l\'appareil: ID manquant');
+      return;
+    }
+    setSelectedDevice(device);
+    setShowPayerModal(true);
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDevice || !selectedDevice._id) {
@@ -236,6 +265,45 @@ const Dashboard = () => {
     }
   };
 
+  const handlePayerConfirm = async () => {
+    if (!selectedDevice || !selectedDevice._id) {
+      console.error('Aucun appareil sélectionné ou ID manquant');
+      return;
+    }
+
+    const calculSolde = (offre: string) => {
+      switch (offre) {
+        case '1H': return 500;
+        case '3H': return 1000;
+        case '4H': return 1500;
+        case '1D': return 2000;
+        case '1S': return 5000;
+        case '2S': return 10000;
+        case '3S': return 15000;
+        case '1M': return 20000;
+        default: return 0;
+      }
+    };
+  
+    const solde = calculSolde(selectedDevice.offre || '1H');
+
+    try {
+      if (!currentSoldeId) return;
+        await updateSolde(currentSoldeId, {
+            montant: Number(solde),
+            operation: 'ajout',
+            description: `${selectedDevice.hostname}`,
+            reference: selectedDevice.mac
+        });
+        toast.success('Paiement effectué avec succès');
+      setShowPayerModal(false);
+    } catch (err) {
+      console.error('Erreur lors du paiement de l\'appareil:', err);
+      toast.error('Erreur lors du paiement de l\'appareil');
+      // L'erreur est déjà gérée dans le store
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditForm(prev => ({
@@ -275,6 +343,14 @@ const Dashboard = () => {
         type="refresh"
       />
 
+      <PayerDeviceModal
+        isOpen={showPayerModal}
+        onClose={() => setShowPayerModal(false)}
+        device={selectedDevice}
+        onConfirm={handlePayerConfirm}
+     
+      />
+
 
 
 
@@ -282,6 +358,17 @@ const Dashboard = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="stats shadow bg-base-100">
+            <div className="stat">
+              
+              <div className="stat-title">Solde actuel</div>
+              <div className="stat-value text-primary">
+              {currentSolde?.soldeActuel?.toFixed(2) || 0} AR
+                
+               </div>
+              <div className="stat-desc">Mois : {format(new Date(currentSolde?.mois + '-01'), 'MMMM yyyy', { locale: fr })} </div>
+            </div>
+
+
             <div className="stat">
               <div className="stat-figure text-primary">
                 <Monitor className="w-6 h-6" />
@@ -291,6 +378,8 @@ const Dashboard = () => {
               <div className="stat-desc">sur {totalDevices} appareils</div>
             </div>
           </div>
+
+          
         </div>
 
         {/* Filtres */}
@@ -479,6 +568,17 @@ const Dashboard = () => {
                             title="Delete device"
                           >
                             <RefreshCcw className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            className="btn btn-ghost btn-xs text-warning"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePayerClick(device);
+                            }}
+                            title="Delete device"
+                          >
+                            <Wallet className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
