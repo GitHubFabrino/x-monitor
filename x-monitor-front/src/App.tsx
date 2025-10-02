@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Dashboard from './pages/Dashboard';
 import DeviceDetails from './pages/DeviceDetails';
+import SoldePage from './pages/SoldePage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 import { useSocketIo } from './hooks/useSocketIo';
@@ -28,6 +29,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/devices/:id" element={<DeviceDetails />} />
+                <Route path="/soldes" element={<SoldePage />} />
               </Routes>
             </Layout>
             <Toaster position="top-right" />

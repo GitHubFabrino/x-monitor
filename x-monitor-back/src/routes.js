@@ -1,5 +1,15 @@
 import express from 'express';
 import Device from './model/Device.js';
+import * as soldeController from './controllers/soldeController.js';
+import soldeValidator from './validators/soldeValidator.js';
+
+const {
+  createSoldeValidation,
+  updateSoldeValidation,
+  getSoldeValidation,
+  deleteSoldeValidation,
+  
+} = soldeValidator;
 
 export function createRoutes({ store, scanner }) {
   const router = express.Router();
@@ -82,6 +92,14 @@ export function createRoutes({ store, scanner }) {
       });
     }
   });
+
+  // Routes pour la gestion des soldes
+  router.get('/soldes', soldeController.getAllSoldes);
+  router.get('/soldes/current', soldeController.getCurrentSolde);
+  router.post('/soldes', createSoldeValidation, soldeController.createSolde);
+  router.get('/soldes/:id', getSoldeValidation, soldeController.getSoldeById);
+  router.put('/soldes/:id', updateSoldeValidation, soldeController.updateSolde);
+  router.delete('/soldes/:id', deleteSoldeValidation, soldeController.deleteSolde);
 
   // Rafraîchir la session d'un appareil
   router.put('/refresh/:id', async (req, res) => {

@@ -23,68 +23,6 @@ export function createStore({ offlineTimeoutMs = 30000, io } = {}) {
   }
 
 
-  // async function markSeen(entry) {
-  //   const now = new Date();
-  //   const { ip, mac, hostname, vendor, netbios, osGuess, lastRttMs } = entry;
-
-  //   let device = await Device.findOne({ mac });
-  //   const isNew = !device;
-
-  //   if (!device) {
-  //     // Créer un nouvel appareil avec une nouvelle session
-  //     const endDate = calculateEndDate(now, "1H"); // Offre par défaut
-  //     device = new Device({
-  //       ip,
-  //       mac,
-  //       hostname: hostname || `unknown-${mac}`,
-  //       vendor: vendor || 'unknown',
-  //       netbios: netbios || '',
-  //       osGuess: osGuess || '',
-  //       lastRttMs: lastRttMs || null,
-  //       firstSeen: now,
-  //       lastSeen: now,
-  //       online: true,
-  //       sessions: [{
-  //         start: now,
-  //         end: endDate,
-  //         status: 'active'
-  //       }],
-  //       offre: "1H" // Offre par défaut
-  //     });
-
-  //     await device.save();
-  //     byMac.set(mac, device.toObject());
-  //     emitEvent('device:new', device);
-  //   } else {
-  //     // Mettre à jour un appareil existant
-  //     const updates = {
-  //       lastSeen: now,
-  //       online: true
-  //     };
-
-  //     if (ip) updates.ip = ip;
-  //     // if (hostname) updates.hostname = hostname;
-  //     if (vendor) updates.vendor = vendor;
-  //     if (netbios) updates.netbios = netbios;
-  //     if (osGuess) updates.osGuess = osGuess;
-  //     if (lastRttMs) updates.lastRttMs = lastRttMs;
-
-
-
-  //     device = await Device.findOneAndUpdate(
-  //       { mac },
-  //       updates,
-  //       { new: true }
-  //     );
-
-  //     byMac.set(mac, device.toObject());
-  //     emitEvent('device:seen', device);
-  //     console.log("device seen" , device);
-  //   }
-
-  //   return device;
-  // }
-
 
   // Fonction utilitaire pour obtenir la durée maximale d'une session en millisecondes
   function getMaxDurationMs(offre) {
