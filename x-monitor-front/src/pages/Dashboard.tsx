@@ -388,7 +388,7 @@ const Dashboard = () => {
 
               <div className="stat-title">Solde actuel</div>
               <div className="stat-value text-primary">
-                {currentSolde?.soldeActuel?.toFixed(2) || 0} AR
+                {currentSolde?.soldeActuel?.toFixed(0) || 0} AR
 
               </div>
               <div className="stat-desc">Mois : {format(new Date(currentSolde?.mois + '-01'), 'MMMM yyyy', { locale: fr })} </div>
