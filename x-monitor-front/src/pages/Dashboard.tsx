@@ -7,7 +7,7 @@ import { EditDeviceModal } from '../components/EditDeviceModal';
 import { DeleteDeviceModal } from '../components/DeleteDeviceModal';
 import { useDeviceDuration, vendorName } from '../utils/utils';
 import { FormattedDate } from '../components/FormattedDate';
-
+import { useRef } from 'react';
 interface DeviceFormData {
   offre?: string;
   hostname?: string;
@@ -90,20 +90,44 @@ const Dashboard = () => {
 
   // Initialize devices array
   const devices = Array.isArray(devicesAll) ? devicesAll : [];
-
-  // Créer un composant interne pour gérer l'affichage de la durée avec le hook
   const DeviceDuration = ({ device }: { device: Device }) => {
     const { formatted, isExpired, isAboutToExpire } = useDeviceDuration(device);
-
+    const [lastToastTime, setLastToastTime] = useState<number>(0);
+    const TOAST_INTERVAL = 1 * 60 * 1000; // 5 minutes en millisecondes
+  
     const getDurationClass = () => {
       if (isExpired) return 'text-red-600 font-bold';
       if (isAboutToExpire) return 'text-yellow-600 font-medium';
       return 'text-green-600';
     };
-
-    return <span className={getDurationClass()}>{formatted}</span>;
+  
+    useEffect(() => {
+      if (isExpired) {
+        const now = Date.now();
+        // Afficher le toast immédiatement, puis toutes les 5 minutes
+        if (now - lastToastTime > TOAST_INTERVAL) {
+          toast.error(`L'appareil ${device?.hostname || device?.mac} a expiré`, {
+            id: `expired-${device.mac}`, // Pour éviter les doublons
+          });
+          setLastToastTime(now);
+        }
+  
+        // Configurer le prochain rappel
+        const timer = setTimeout(() => {
+          if (isExpired) { // Vérifier à nouveau au cas où l'état aurait changé
+            toast.error(`L'appareil ${device?.hostname || device?.mac} est toujours expiré`, {
+              id: `expired-${device.mac}`,
+            });
+            setLastToastTime(Date.now());
+          }
+        }, TOAST_INTERVAL);
+  
+        return () => clearTimeout(timer); // Nettoyer le timer si le composant est démonté
+      }
+    }, [isExpired, device?.mac, device?.hostname, lastToastTime]);
+  
+    return <span className={getDurationClass()}>{isExpired ? 'Expired' : formatted}</span>;
   };
-
   // Appliquer les filtres
   const filteredDevices = devices.filter(device => {
     // Filtre par type

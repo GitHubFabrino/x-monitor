@@ -22,74 +22,14 @@ export function createStore({ offlineTimeoutMs = 30000, io } = {}) {
     }
   }
 
-  // Marquer un appareil comme vu
-  // async function markSeen(entry) {
-  //   const now = new Date();
-  //   const { ip, mac, hostname, vendor, netbios, osGuess, lastRttMs } = entry;
-    
-  //   let device = await Device.findOne({ mac });
-  //   const isNew = !device;
-
-  //   if (!device) {
-  //     // Créer un nouvel appareil
-  //     device = new Device({
-  //       ip,
-  //       mac,
-  //       hostname: hostname || `unknown-${mac}`,
-  //       vendor: vendor || 'unknown',
-  //       netbios: netbios || '',
-  //       osGuess: osGuess || '',
-  //       lastRttMs: lastRttMs || null,
-  //       firstSeen: now,
-  //       lastSeen: now,
-  //       online: true,
-  //       sessions: [{ start: now }],
-  //       offre: "1H"
-  //     });
-      
-  //     await device.save();
-  //     byMac.set(mac, device.toObject());
-  //     emitEvent('device:new', device);
-  //   } else {
-  //     // Mettre à jour un appareil existant
-  //     const updates = {
-  //       lastSeen: now,
-  //       online: true
-  //     };
-
-  //     if (ip) updates.ip = ip;
-  //     if (hostname) updates.hostname = hostname;
-  //     if (vendor) updates.vendor = vendor;
-  //     if (netbios) updates.netbios = netbios;
-  //     if (osGuess) updates.osGuess = osGuess;
-  //     if (lastRttMs) updates.lastRttMs = lastRttMs;
-
-  //     // Si l'appareil était hors ligne, démarrer une nouvelle session
-  //     if (!device.online) {
-  //       updates.$push = { sessions: { start: now } };
-  //     }
-
-  //     device = await Device.findOneAndUpdate(
-  //       { mac },
-  //       updates,
-  //       { new: true, upsert: true }
-  //     );
-
-  //     byMac.set(mac, device.toObject());
-  //     emitEvent('device:seen', device);
-  //   }
-
-  //   return device;
-  // }
-
 
   // async function markSeen(entry) {
   //   const now = new Date();
   //   const { ip, mac, hostname, vendor, netbios, osGuess, lastRttMs } = entry;
-    
+
   //   let device = await Device.findOne({ mac });
   //   const isNew = !device;
-  
+
   //   if (!device) {
   //     // Créer un nouvel appareil avec une nouvelle session
   //     const endDate = calculateEndDate(now, "1H"); // Offre par défaut
@@ -107,12 +47,11 @@ export function createStore({ offlineTimeoutMs = 30000, io } = {}) {
   //       sessions: [{
   //         start: now,
   //         end: endDate,
-  //         durationMs: endDate - now,
   //         status: 'active'
   //       }],
   //       offre: "1H" // Offre par défaut
   //     });
-      
+
   //     await device.save();
   //     byMac.set(mac, device.toObject());
   //     emitEvent('device:new', device);
@@ -122,138 +61,125 @@ export function createStore({ offlineTimeoutMs = 30000, io } = {}) {
   //       lastSeen: now,
   //       online: true
   //     };
-  
+
   //     if (ip) updates.ip = ip;
-  //     if (hostname) updates.hostname = hostname;
+  //     // if (hostname) updates.hostname = hostname;
   //     if (vendor) updates.vendor = vendor;
   //     if (netbios) updates.netbios = netbios;
   //     if (osGuess) updates.osGuess = osGuess;
   //     if (lastRttMs) updates.lastRttMs = lastRttMs;
-  
-  //     // Vérifier si une nouvelle session doit être démarrée
-  //     const activeSession = device.sessions.find(s => 
-  //       s.status === 'active' && 
-  //       new Date(s.start) <= now && 
-  //       new Date(s.end) >= now
-  //     );
-  
-  //     if (!activeSession) {
-  //       // Démarrer une nouvelle session
-  //       const endDate = calculateEndDate(now, device.offre || "1H");
-  //       updates.$push = {
-  //         sessions: {
-  //           start: now,
-  //           end: endDate,
-  //           durationMs: endDate - now,
-  //           status: 'active'
-  //         }
-  //       };
-  //     }
-  
+
+
+
   //     device = await Device.findOneAndUpdate(
   //       { mac },
   //       updates,
   //       { new: true }
   //     );
-  
+
   //     byMac.set(mac, device.toObject());
   //     emitEvent('device:seen', device);
+  //     console.log("device seen" , device);
   //   }
-  
+
   //   return device;
   // }
 
-  // Dans store.js, modifiez la fonction markSeen comme suit :
 
-async function markSeen(entry) {
-  const now = new Date();
-  const { ip, mac, hostname, vendor, netbios, osGuess, lastRttMs } = entry;
-  
-  let device = await Device.findOne({ mac });
-  const isNew = !device;
-
-  if (!device) {
-    // Créer un nouvel appareil avec une nouvelle session
-    const endDate = calculateEndDate(now, "1H"); // Offre par défaut
-    device = new Device({
-      ip,
-      mac,
-      hostname: hostname || `unknown-${mac}`,
-      vendor: vendor || 'unknown',
-      netbios: netbios || '',
-      osGuess: osGuess || '',
-      lastRttMs: lastRttMs || null,
-      firstSeen: now,
-      lastSeen: now,
-      online: true,
-      sessions: [{
-        start: now,
-        end: endDate,
-        status: 'active'
-      }],
-      offre: "1H" // Offre par défaut
-    });
-    
-    await device.save();
-    byMac.set(mac, device.toObject());
-    emitEvent('device:new', device);
-  } else {
-    // Mettre à jour un appareil existant
-    const updates = {
-      lastSeen: now,
-      online: true
+  // Fonction utilitaire pour obtenir la durée maximale d'une session en millisecondes
+  function getMaxDurationMs(offre) {
+    const durations = {
+      '1H': 60 * 60 * 1000,    // 1 heure
+      '3H': 3 * 60 * 60 * 1000, // 3 heures
+      'NIGHT': 8 * 60 * 60 * 1000, // 8 heures (nuit)
+      'DAY': 12 * 60 * 60 * 1000, // 12 heures (journée)
+      '1S': 24 * 60 * 60 * 1000,  // 1 jour
+      '2S': 2 * 24 * 60 * 60 * 1000, // 2 jours
+      '3S': 3 * 24 * 60 * 60 * 1000, // 3 jours
+      '1M': 30 * 24 * 60 * 60 * 1000 // 1 mois
     };
-  
-    if (ip) updates.ip = ip;
-    // if (hostname) updates.hostname = hostname;
-    if (vendor) updates.vendor = vendor;
-    if (netbios) updates.netbios = netbios;
-    if (osGuess) updates.osGuess = osGuess;
-    if (lastRttMs) updates.lastRttMs = lastRttMs;
-
-
-    
-  
-    // Vérifier si une nouvelle session doit être démarrée
-    // const activeSession = device.sessions && device.sessions.length > 0 
-    //   ? device.sessions[device.sessions.length - 1]
-    //   : null;
-
-    // if (!activeSession || activeSession.status !== 'active' || 
-    //     (activeSession.end && new Date(activeSession.end) <= now)) {
-    //   // Démarrer une nouvelle session
-    //   const endDate = calculateEndDate(now, device.offre || "1H");
-    //   updates.$push = {
-    //     sessions: {
-    //       start: now,
-    //       end: endDate,
-    //       status: 'active'
-    //     }
-    //   };
-    // } else {
-    //   // Mettre à jour la durée de la session active
-    //   updates.$set = updates.$set || {};
-    //   updates.$set['sessions.$[].durationMs'] = now - new Date(activeSession.start);
-    // }
-  
-    device = await Device.findOneAndUpdate(
-      { mac },
-      updates,
-      { new: true }
-    );
-  
-    byMac.set(mac, device.toObject());
-    emitEvent('device:seen', device);
-    console.log("device seen" , device);
+    return durations[offre] || 60 * 60 * 1000; // Par défaut 1 heure
   }
-  
-  return device;
-}
+
+  async function markSeen(entry) {
+    const now = new Date();
+    const { ip, mac, hostname, vendor, netbios, osGuess, lastRttMs } = entry;
+
+    let device = await Device.findOne({ mac });
+    const isNew = !device;
+
+    if (!device) {
+      // Créer un nouvel appareil avec une nouvelle session
+      const endDate = calculateEndDate(now, "1H"); // Offre par défaut
+      device = new Device({
+        ip,
+        mac,
+        hostname: hostname || `unknown-${mac}`,
+        vendor: vendor || 'unknown',
+        netbios: netbios || '',
+        osGuess: osGuess || '',
+        lastRttMs: lastRttMs || null,
+        firstSeen: now,
+        lastSeen: now,
+        online: true,
+        sessions: [{
+          start: now,
+          end: endDate,
+          status: 'active'
+        }],
+        offre: "1H" // Offre par défaut
+      });
+
+      await device.save();
+      byMac.set(mac, device.toObject());
+      emitEvent('device:new', device);
+    } else {
+      // Vérifier si la dernière session est expirée
+      const lastSession = device.sessions[device.sessions.length - 1];
+      const offre = device.offre;
+      const maxDurationMs = getMaxDurationMs(offre);
+      const sessionDuration = now - lastSession.start;
+
+      // Si la session est expirée
+      if (sessionDuration > maxDurationMs && lastSession.status !== 'expired') {
+        // Marquer l'ancienne session comme expirée
+        lastSession.status = 'expired';
+        lastSession.end = new Date(lastSession.start.getTime() + maxDurationMs);
+
+        // Ne pas créer de nouvelle session
+        device.online = false; // Mettre l'appareil hors ligne
+      }
+
+      // Mettre à jour les informations de l'appareil
+      const updates = {
+        lastSeen: now,
+        online: device.online, // Utiliser la valeur mise à jour
+        sessions: device.sessions
+      };
+      if (ip) updates.ip = ip;
+      if (vendor) updates.vendor = vendor;
+      if (netbios) updates.netbios = netbios;
+      if (osGuess) updates.osGuess = osGuess;
+      if (lastRttMs) updates.lastRttMs = lastRttMs;
+
+      device = await Device.findOneAndUpdate(
+        { mac },
+        { $set: updates },
+        { new: true }
+      );
+
+      byMac.set(mac, device.toObject());
+      emitEvent('device:seen', device);
+      console.log("device seen -----------------------------------------",device.sessions,now,lastSession.start,offre,maxDurationMs,sessionDuration,lastSession.status);
+    }
+
+    return device;
+  }
 
   function calculateEndDate(startDate, offre) {
     const endDate = new Date(startDate);
-    
-    switch(offre) {
+
+    switch (offre) {
       case '1H':
         endDate.setHours(endDate.getHours() + 1);
         break;
@@ -289,7 +215,7 @@ async function markSeen(entry) {
         // Par défaut, 1 heure
         endDate.setHours(endDate.getHours() + 1);
     }
-    
+
     return endDate;
   }
 
@@ -297,7 +223,7 @@ async function markSeen(entry) {
   async function markOffline() {
     const now = new Date();
     const offlineThreshold = new Date(now.getTime() - offlineTimeoutMs);
-    
+
     const devices = await Device.find({
       lastSeen: { $lt: offlineThreshold },
       online: true
@@ -314,7 +240,7 @@ async function markSeen(entry) {
     const offlineThreshold = 5 * 60 * 1000; // 5 minutes
     const now = new Date();
     const offlineTime = new Date(now.getTime() - offlineThreshold);
-  
+
     const result = await Device.updateMany(
       {
         online: true,
@@ -324,11 +250,11 @@ async function markSeen(entry) {
         $set: { online: false }
       }
     );
-  
+
     if (result.modifiedCount > 0) {
       console.log(`Marqué ${result.modifiedCount} appareils comme hors ligne`);
     }
-    
+
     return result;
   }
   // Charger les appareils au démarrage

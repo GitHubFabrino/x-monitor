@@ -43,7 +43,10 @@ export const formatDuration = (ms: number): string => {
 const calculateDuration = (device: Device): DurationResult => {
   try {
     const sessions = device?.sessions;
+  
     const lastSession = sessions?.[sessions.length - 1];
+
+    console.log("lastSession", sessions?.length);
     
     if (!sessions?.length || !lastSession?.start) {
       return { formatted: 'N/A', isExpired: false, isAboutToExpire: false };
