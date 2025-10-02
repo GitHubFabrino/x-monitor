@@ -137,7 +137,7 @@ const SoldePage = () => {
                                 </div>
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text">Solde initial (MAD)</span>
+                                        <span className="label-text">Solde initial (AR)</span>
                                     </label>
                                     <input
                                         type="number"
@@ -211,7 +211,7 @@ const SoldePage = () => {
                                 </div>
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text">Montant (MAD)</span>
+                                        <span className="label-text">Montant (AR)</span>
                                     </label>
                                     <input
                                         type="number"
@@ -307,10 +307,10 @@ const SoldePage = () => {
                                         </div>
                                         <div className="text-right mt-4 md:mt-0">
                                             <div className="text-3xl font-bold text-primary">
-                                                {currentSolde.soldeActuel.toFixed(2)} MAD
+                                                {currentSolde.soldeActuel.toFixed(2)} AR
                                             </div>
                                             <div className="text-sm text-gray-500">
-                                                Solde initial: {currentSolde?.soldeInitial?.toFixed(2) || 0} MAD
+                                                Solde initial: {currentSolde?.soldeInitial?.toFixed(2) || 0} AR
                                             </div>
                                         </div>
                                     </div>
@@ -339,7 +339,7 @@ const SoldePage = () => {
                                                                 <td>{op.description || 'N/A'}</td>
                                                                 <td>{op.reference || 'N/A'}</td>
                                                                 <td className={`text-right font-medium ${op.operation === 'ajout' ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {op.operation === 'ajout' ? '+' : '-'}{op.montant.toFixed(2)} MAD
+                                                                    {op.operation === 'ajout' ? '+' : '-'}{op.montant.toFixed(2)} AR
                                                                 </td>
                                                                 <td>
                                                                     <span className={`badge ${op.operation === 'ajout' ? 'badge-success' : 'badge-error'}`}>
@@ -388,8 +388,8 @@ const SoldePage = () => {
                                             {soldes.map((solde) => (
                                                 <tr key={solde._id}>
                                                     <td>{format(new Date(solde.mois + '-01'), 'MMMM yyyy', { locale: fr })}</td>
-                                                    <td>{solde.soldeInitial.toFixed(2)} MAD</td>
-                                                    <td>{solde.soldeActuel.toFixed(2)} MAD</td>
+                                                    <td>{solde.soldeInitial.toFixed(2)} AR</td>
+                                                    <td>{solde.soldeActuel.toFixed(2)} AR</td>
                                                     <td>
                                                         <span className={`badge ${solde.statut === 'actif' ? 'badge-success' : 'badge-warning'}`}>
                                                             {solde.statut === 'actif' ? 'Actif' : 'Clôturé'}
